@@ -2,7 +2,7 @@ import os
 import uuid
 import time
 import threading
-from flask import Flask, render_template_string, request, jsonify, send_file
+from flask import Flask, render_template_string, request, jsonify, send_file, redirect, url_for
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default-secret-key')
@@ -20,7 +20,7 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> File Sharing </title>
+    <title>FilePizza Clone</title>
     <style>
         :root {
             --primary: #ff6b6b;
@@ -29,6 +29,7 @@ HTML_TEMPLATE = """
             --light: #f7f9f9;
             --gray: #e0e0e0;
             --success: #4caf50;
+            --accent: #ff9e44;
         }
         
         * {
@@ -165,6 +166,15 @@ HTML_TEMPLATE = """
             box-shadow: 0 5px 15px rgba(78, 205, 196, 0.4);
         }
         
+        .btn-accent {
+            background: var(--accent);
+        }
+        
+        .btn-accent:hover {
+            background: #ff8c2b;
+            box-shadow: 0 5px 15px rgba(255, 158, 68, 0.4);
+        }
+        
         .btn:disabled {
             background: var(--gray);
             cursor: not-allowed;
@@ -201,6 +211,49 @@ HTML_TEMPLATE = """
         .link-container {
             margin: 20px 0;
             display: none;
+        }
+        
+        .id-container {
+            margin: 20px 0;
+            display: none;
+            text-align: center;
+        }
+        
+        .transfer-id {
+            font-size: 1.5rem;
+            font-weight: bold;
+            padding: 15px 25px;
+            background: rgba(78, 205, 196, 0.1);
+            border-radius: 8px;
+            display: inline-block;
+            margin: 15px 0;
+            color: var(--dark);
+            border: 1px dashed var(--secondary);
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .transfer-id:hover {
+            background: rgba(78, 205, 196, 0.2);
+        }
+        
+        .id-tooltip {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        
+        .transfer-id:hover .id-tooltip {
+            opacity: 1;
         }
         
         .link-box {
@@ -321,14 +374,15 @@ HTML_TEMPLATE = """
                     </div>
                 </div>
                 
-                <button class="btn" id="sendBtn" disabled>Generate Link</button>
+                <button class="btn" id="sendBtn" disabled>Generate Transfer ID</button>
                 
-                <div class="link-container" id="linkContainer">
-                    <p>Share this link with the recipient:</p>
-                    <div class="link-box">
-                        <input type="text" id="shareLink" class="link-input" readonly>
-                        <button class="copy-btn" id="copyBtn">Copy</button>
+                <div class="id-container" id="idContainer">
+                    <p>Share this transfer ID with the recipient:</p>
+                    <div class="transfer-id" id="transferId">
+                        <span id="idText">Loading...</span>
+                        <div class="id-tooltip">Click to copy</div>
                     </div>
+                    <p class="instructions">The recipient should enter this ID in the "Receive a File" section</p>
                 </div>
             </div>
             
@@ -354,15 +408,15 @@ HTML_TEMPLATE = """
                 
                 <div class="status" id="receiveStatus"></div>
                 
-                <a class="btn" id="downloadBtn" style="display: none; margin-top: 20px;">Download File</a>
+                <a class="btn btn-accent" id="downloadBtn" style="display: none; margin-top: 20px;">Download File</a>
             </div>
         </div>
         
         <div class="instructions">
             <h3>How it works:</h3>
             <ol>
-                <li><strong>Sender</strong> selects a file and generates a shareable link</li>
-                <li><strong>Recipient</strong> enters the transfer ID from the link to connect</li>
+                <li><strong>Sender</strong> selects a file and generates a transfer ID</li>
+                <li><strong>Recipient</strong> enters the transfer ID to connect</li>
                 <li>Files are transferred <strong>directly</strong> between browsers</li>
                 <li>Files are <strong>never stored</strong> on any server - completely private</li>
                 <li>Transfer works as long as both browsers are connected</li>
@@ -385,9 +439,9 @@ HTML_TEMPLATE = """
         const progressBar = document.getElementById('progressBar');
         const fileName = document.getElementById('fileName');
         const fileSize = document.getElementById('fileSize');
-        const linkContainer = document.getElementById('linkContainer');
-        const shareLink = document.getElementById('shareLink');
-        const copyBtn = document.getElementById('copyBtn');
+        const idContainer = document.getElementById('idContainer');
+        const transferId = document.getElementById('transferId');
+        const idText = document.getElementById('idText');
         
         const peerIdInput = document.getElementById('peerId');
         const receiveBtn = document.getElementById('receiveBtn');
@@ -400,7 +454,7 @@ HTML_TEMPLATE = """
         
         // Variables
         let selectedFile = null;
-        let transferId = null;
+        let transferIdValue = null;
         
         // Event Listeners
         browseBtn.addEventListener('click', () => fileInput.click());
@@ -421,8 +475,8 @@ HTML_TEMPLATE = """
             }
         });
         
-        sendBtn.addEventListener('click', generateLink);
-        copyBtn.addEventListener('click', copyLink);
+        sendBtn.addEventListener('click', generateTransferId);
+        transferId.addEventListener('click', copyTransferId);
         receiveBtn.addEventListener('click', connectToPeer);
         
         // Handle file selection
@@ -449,8 +503,8 @@ HTML_TEMPLATE = """
             else return (bytes / 1048576).toFixed(1) + ' MB';
         }
         
-        // Generate shareable link
-        function generateLink() {
+        // Generate transfer ID
+        function generateTransferId() {
             if (!selectedFile) return;
             
             // Show progress
@@ -468,17 +522,16 @@ HTML_TEMPLATE = """
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    transferId = data.transfer_id;
+                    transferIdValue = data.transfer_id;
                     progressBar.style.width = '100%';
-                    linkContainer.style.display = 'block';
+                    idContainer.style.display = 'block';
                     
-                    // Generate the shareable link
-                    const link = `${window.location.origin}/receive/${transferId}`;
-                    shareLink.value = link;
+                    // Display the transfer ID
+                    idText.textContent = transferIdValue;
                     sendBtn.disabled = true;
                     
                     // Show success status
-                    showStatus('File ready for sharing! Send the link to the recipient.', 'success');
+                    showStatus('Transfer ID generated! Share this ID with the recipient.', 'success');
                 } else {
                     showStatus('Error: ' + data.error, 'error');
                     progressBar.style.width = '0%';
@@ -491,16 +544,20 @@ HTML_TEMPLATE = """
             });
         }
         
-        // Copy link to clipboard
-        function copyLink() {
-            shareLink.select();
+        // Copy transfer ID to clipboard
+        function copyTransferId() {
+            const textArea = document.createElement('textarea');
+            textArea.value = transferIdValue;
+            document.body.appendChild(textArea);
+            textArea.select();
             document.execCommand('copy');
+            document.body.removeChild(textArea);
             
-            // Show tooltip
-            const originalText = copyBtn.textContent;
-            copyBtn.textContent = 'Copied!';
+            // Show visual feedback
+            const originalText = idText.textContent;
+            idText.textContent = 'Copied!';
             setTimeout(() => {
-                copyBtn.textContent = originalText;
+                idText.textContent = originalText;
             }, 2000);
         }
         
