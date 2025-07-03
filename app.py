@@ -1,15 +1,15 @@
-from flask import Flask, render_template_string, request, jsonify, redirect, url_for
-import uuid
 import os
+import uuid
 import time
-from threading import Thread, Lock
+import threading
+from flask import Flask, render_template_string, request, jsonify, send_file
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your_secret_key_here'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default-secret-key')
 
 # In-memory storage for active transfers
 transfers = {}
-transfer_lock = Lock()
+transfer_lock = threading.Lock()
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
@@ -598,7 +598,6 @@ HTML_TEMPLATE = """
 </html>
 """
 
-# Flask Routes
 @app.route('/')
 def index():
     return render_template_string(HTML_TEMPLATE)
@@ -615,11 +614,9 @@ def upload_file():
     # Generate a unique transfer ID
     transfer_id = str(uuid.uuid4())
     filename = file.filename
-    file_size = os.fstat(file.stream.fileno()).st_size
-    
-    # Save the file temporarily
     file_path = os.path.join(UPLOAD_FOLDER, f"{transfer_id}_{filename}")
     file.save(file_path)
+    file_size = os.path.getsize(file_path)
     
     # Store transfer information
     with transfer_lock:
@@ -632,7 +629,9 @@ def upload_file():
         }
     
     # Start a thread to clean up the file after 1 hour
-    Thread(target=cleanup_transfer, args=(transfer_id,)).start()
+    cleanup_thread = threading.Thread(target=cleanup_transfer, args=(transfer_id,))
+    cleanup_thread.daemon = True
+    cleanup_thread.start()
     
     return jsonify({
         'success': True,
@@ -683,7 +682,9 @@ def cleanup_transfer(transfer_id):
         if transfer_id in transfers:
             # Delete the file
             try:
-                os.unlink(transfers[transfer_id]['filepath'])
+                filepath = transfers[transfer_id]['filepath']
+                if os.path.exists(filepath):
+                    os.unlink(filepath)
             except Exception as e:
                 print(f"Error deleting file: {e}")
             
@@ -691,4 +692,5 @@ def cleanup_transfer(transfer_id):
             del transfers[transfer_id]
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
