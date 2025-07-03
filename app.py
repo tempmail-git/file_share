@@ -2,10 +2,12 @@ import os
 import uuid
 import time
 import threading
-from flask import Flask, render_template_string, request, jsonify, send_file, redirect, url_for
+import shutil
+from flask import Flask, render_template_string, request, jsonify, send_file, make_response
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default-secret-key')
+app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024 * 1024  # 100 GB
 
 # In-memory storage for active transfers
 transfers = {}
@@ -208,11 +210,6 @@ HTML_TEMPLATE = """
             color: #666;
         }
         
-        .link-container {
-            margin: 20px 0;
-            display: none;
-        }
-        
         .id-container {
             margin: 20px 0;
             display: none;
@@ -256,31 +253,35 @@ HTML_TEMPLATE = """
             opacity: 1;
         }
         
-        .link-box {
+        .file-list {
+            margin-top: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+        }
+        
+        .file-item {
             display: flex;
-            border: 1px solid var(--gray);
-            border-radius: 8px;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .file-name {
             overflow: hidden;
-        }
-        
-        .link-input {
+            text-overflow: ellipsis;
+            white-space: nowrap;
             flex: 1;
-            padding: 12px 15px;
-            border: none;
-            font-size: 1rem;
         }
         
-        .copy-btn {
-            background: var(--secondary);
-            color: white;
-            border: none;
-            padding: 0 20px;
-            cursor: pointer;
-            transition: background 0.3s;
+        .file-size {
+            margin-left: 10px;
+            color: #666;
         }
         
-        .copy-btn:hover {
-            background: #3bb5ae;
+        .file-progress {
+            width: 100%;
+            margin-top: 5px;
         }
         
         .status {
@@ -321,6 +322,13 @@ HTML_TEMPLATE = """
             margin-bottom: 10px;
         }
         
+        .file-limit {
+            text-align: center;
+            margin-top: 10px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
         footer {
             text-align: center;
             margin-top: 50px;
@@ -353,24 +361,26 @@ HTML_TEMPLATE = """
             <div class="card">
                 <div class="card-header">
                     <div class="card-icon">📤</div>
-                    <h2 class="card-title">Send a File</h2>
+                    <h2 class="card-title">Send Files</h2>
                 </div>
                 
                 <div class="drop-area" id="dropArea">
                     <i>📁</i>
-                    <p>Drag & drop your file here</p>
+                    <p>Drag & drop your files here</p>
                     <p>or</p>
                     <button class="btn" id="browseBtn">Browse Files</button>
                 </div>
-                <input type="file" id="fileInput" class="file-input">
+                <input type="file" id="fileInput" class="file-input" multiple>
+                
+                <div class="file-list" id="fileList"></div>
                 
                 <div class="progress-container" id="progressContainer" style="display: none;">
                     <div class="progress-bar">
-                        <div class="progress" id="progressBar"></div>
+                        <div class="progress" id="totalProgressBar"></div>
                     </div>
                     <div class="file-info">
-                        <span id="fileName"></span>
-                        <span id="fileSize"></span>
+                        <span id="totalFiles">0 files</span>
+                        <span id="totalSize">0 bytes</span>
                     </div>
                 </div>
                 
@@ -382,44 +392,48 @@ HTML_TEMPLATE = """
                         <span id="idText">Loading...</span>
                         <div class="id-tooltip">Click to copy</div>
                     </div>
-                    <p class="instructions">The recipient should enter this ID in the "Receive a File" section</p>
+                    <p class="instructions">The recipient should enter this ID in the "Receive Files" section</p>
                 </div>
+                
+                <p class="file-limit">Supports multiple files and large transfers up to 100GB</p>
             </div>
             
             <!-- Receiver Card -->
             <div class="card">
                 <div class="card-header">
                     <div class="card-icon">📥</div>
-                    <h2 class="card-title">Receive a File</h2>
+                    <h2 class="card-title">Receive Files</h2>
                 </div>
                 
                 <input type="text" id="peerId" class="link-input" placeholder="Enter transfer ID">
                 <button class="btn btn-secondary" id="receiveBtn" style="margin-top: 20px;">Connect</button>
+                
+                <div class="file-list" id="receiveFileList"></div>
                 
                 <div class="progress-container" id="receiveProgress" style="display: none;">
                     <div class="progress-bar">
                         <div class="progress" id="receiveBar"></div>
                     </div>
                     <div class="file-info">
-                        <span id="receiveName"></span>
-                        <span id="receiveSize"></span>
+                        <span id="receiveStatusText">Preparing download...</span>
                     </div>
                 </div>
                 
                 <div class="status" id="receiveStatus"></div>
                 
-                <a class="btn btn-accent" id="downloadBtn" style="display: none; margin-top: 20px;">Download File</a>
+                <a class="btn btn-accent" id="downloadBtn" style="display: none; margin-top: 20px;">Download All Files</a>
             </div>
         </div>
         
         <div class="instructions">
             <h3>How it works:</h3>
             <ol>
-                <li><strong>Sender</strong> selects a file and generates a transfer ID</li>
+                <li><strong>Sender</strong> selects files and generates a transfer ID</li>
                 <li><strong>Recipient</strong> enters the transfer ID to connect</li>
                 <li>Files are transferred <strong>directly</strong> between browsers</li>
                 <li>Files are <strong>never stored</strong> on any server - completely private</li>
                 <li>Transfer works as long as both browsers are connected</li>
+                <li>Supports multiple files and large transfers up to 100GB</li>
             </ol>
         </div>
         
@@ -436,25 +450,27 @@ HTML_TEMPLATE = """
         const browseBtn = document.getElementById('browseBtn');
         const sendBtn = document.getElementById('sendBtn');
         const progressContainer = document.getElementById('progressContainer');
-        const progressBar = document.getElementById('progressBar');
-        const fileName = document.getElementById('fileName');
-        const fileSize = document.getElementById('fileSize');
+        const totalProgressBar = document.getElementById('totalProgressBar');
+        const totalFiles = document.getElementById('totalFiles');
+        const totalSize = document.getElementById('totalSize');
+        const fileList = document.getElementById('fileList');
         const idContainer = document.getElementById('idContainer');
         const transferId = document.getElementById('transferId');
         const idText = document.getElementById('idText');
         
         const peerIdInput = document.getElementById('peerId');
         const receiveBtn = document.getElementById('receiveBtn');
+        const receiveFileList = document.getElementById('receiveFileList');
         const receiveProgress = document.getElementById('receiveProgress');
         const receiveBar = document.getElementById('receiveBar');
-        const receiveName = document.getElementById('receiveName');
-        const receiveSize = document.getElementById('receiveSize');
+        const receiveStatusText = document.getElementById('receiveStatusText');
         const receiveStatus = document.getElementById('receiveStatus');
         const downloadBtn = document.getElementById('downloadBtn');
         
         // Variables
-        let selectedFile = null;
+        let selectedFiles = [];
         let transferIdValue = null;
+        const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB chunks
         
         // Event Listeners
         browseBtn.addEventListener('click', () => fileInput.click());
@@ -483,64 +499,164 @@ HTML_TEMPLATE = """
         function handleFileSelect() {
             if (fileInput.files.length === 0) return;
             
-            selectedFile = fileInput.files[0];
-            updateFileInfo(selectedFile);
+            selectedFiles = Array.from(fileInput.files);
+            updateFileList(selectedFiles);
             sendBtn.disabled = false;
         }
         
-        // Update file info display
-        function updateFileInfo(file) {
+        // Update file list display
+        function updateFileList(files) {
+            fileList.innerHTML = '';
+            fileList.style.display = 'block';
             progressContainer.style.display = 'block';
-            fileName.textContent = file.name;
-            fileSize.textContent = formatFileSize(file.size);
-            progressBar.style.width = '0%';
+            
+            let totalSizeBytes = 0;
+            
+            files.forEach((file, index) => {
+                totalSizeBytes += file.size;
+                
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <div class="file-name">${file.name}</div>
+                    <div class="file-size">${formatFileSize(file.size)}</div>
+                    <div class="file-progress">
+                        <div class="progress-bar">
+                            <div class="progress" id="fileProgress-${index}" style="width: 0%"></div>
+                        </div>
+                    </div>
+                `;
+                fileList.appendChild(fileItem);
+            });
+            
+            totalFiles.textContent = `${files.length} file${files.length > 1 ? 's' : ''}`;
+            totalSize.textContent = formatFileSize(totalSizeBytes);
+            totalProgressBar.style.width = '0%';
         }
         
         // Format file size
         function formatFileSize(bytes) {
             if (bytes < 1024) return bytes + ' bytes';
             else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
-            else return (bytes / 1048576).toFixed(1) + ' MB';
+            else if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + ' MB';
+            else return (bytes / 1073741824).toFixed(1) + ' GB';
         }
         
         // Generate transfer ID
         function generateTransferId() {
-            if (!selectedFile) return;
+            if (selectedFiles.length === 0) return;
             
             // Show progress
-            progressBar.style.width = '30%';
+            totalProgressBar.style.width = '10%';
             
-            // Create FormData to send the file to the server
-            const formData = new FormData();
-            formData.append('file', selectedFile);
-            
-            // Send file to server to get a transfer ID
-            fetch('/upload', {
+            // Create a new transfer on the server
+            fetch('/create_transfer', {
                 method: 'POST',
-                body: formData
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    file_count: selectedFiles.length,
+                    total_size: selectedFiles.reduce((sum, file) => sum + file.size, 0)
+                })
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
                     transferIdValue = data.transfer_id;
-                    progressBar.style.width = '100%';
-                    idContainer.style.display = 'block';
-                    
-                    // Display the transfer ID
-                    idText.textContent = transferIdValue;
-                    sendBtn.disabled = true;
-                    
-                    // Show success status
-                    showStatus('Transfer ID generated! Share this ID with the recipient.', 'success');
+                    // Upload files in chunks
+                    uploadFiles(transferIdValue);
                 } else {
                     showStatus('Error: ' + data.error, 'error');
-                    progressBar.style.width = '0%';
+                    totalProgressBar.style.width = '0%';
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                showStatus('Error uploading file', 'error');
-                progressBar.style.width = '0%';
+                showStatus('Error creating transfer', 'error');
+                totalProgressBar.style.width = '0%';
+            });
+        }
+        
+        // Upload files in chunks
+        function uploadFiles(transferId) {
+            let uploadedCount = 0;
+            const totalCount = selectedFiles.length;
+            
+            selectedFiles.forEach((file, fileIndex) => {
+                const fileId = uuidv4();
+                const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+                let chunkIndex = 0;
+                
+                function uploadNextChunk() {
+                    if (chunkIndex >= totalChunks) {
+                        // File upload complete
+                        uploadedCount++;
+                        updateTotalProgress(uploadedCount, totalCount);
+                        
+                        if (uploadedCount === totalCount) {
+                            // All files uploaded
+                            idContainer.style.display = 'block';
+                            idText.textContent = transferId;
+                            sendBtn.disabled = true;
+                            showStatus('All files uploaded! Share the transfer ID.', 'success');
+                        }
+                        return;
+                    }
+                    
+                    const start = chunkIndex * CHUNK_SIZE;
+                    const end = Math.min(file.size, start + CHUNK_SIZE);
+                    const chunk = file.slice(start, end);
+                    
+                    const formData = new FormData();
+                    formData.append('transfer_id', transferId);
+                    formData.append('file_id', fileId);
+                    formData.append('file_index', fileIndex.toString());
+                    formData.append('chunk_index', chunkIndex.toString());
+                    formData.append('total_chunks', totalChunks.toString());
+                    formData.append('chunk', chunk);
+                    formData.append('file_name', file.name);
+                    formData.append('file_size', file.size.toString());
+                    
+                    fetch('/upload_chunk', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Update progress for this file
+                            const progress = ((chunkIndex + 1) / totalChunks) * 100;
+                            document.getElementById(`fileProgress-${fileIndex}`).style.width = `${progress}%`;
+                            
+                            chunkIndex++;
+                            uploadNextChunk();
+                        } else {
+                            showStatus(`Error uploading ${file.name}: ${data.error}`, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showStatus(`Error uploading ${file.name}`, 'error');
+                    });
+                }
+                
+                // Start uploading chunks for this file
+                uploadNextChunk();
+            });
+        }
+        
+        // Update total progress
+        function updateTotalProgress(uploadedCount, totalCount) {
+            const progress = (uploadedCount / totalCount) * 100;
+            totalProgressBar.style.width = `${progress}%`;
+        }
+        
+        // Simple UUID generator for file chunks
+        function uuidv4() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
             });
         }
         
@@ -578,8 +694,24 @@ HTML_TEMPLATE = """
                 if (data.exists) {
                     receiveStatus.textContent = 'Transfer found! Preparing download...';
                     
-                    // Simulate transfer progress
-                    simulateTransferProgress(transferId);
+                    // Get file list
+                    fetch(`/transfer/${transferId}/files`)
+                    .then(response => response.json())
+                    .then(fileData => {
+                        if (fileData.success) {
+                            displayReceiveFiles(fileData.files);
+                            receiveStatus.textContent = `Ready to download ${fileData.files.length} files`;
+                            receiveStatus.className = 'status success';
+                            
+                            // Show download button
+                            downloadBtn.href = `/download_all/${transferId}`;
+                            downloadBtn.textContent = `Download All Files (${formatFileSize(fileData.total_size)})`;
+                            downloadBtn.style.display = 'inline-block';
+                        } else {
+                            receiveStatus.textContent = 'Error: ' + fileData.error;
+                            receiveStatus.className = 'status error';
+                        }
+                    });
                 } else {
                     receiveStatus.textContent = 'Transfer not found. Please check the ID.';
                     receiveStatus.className = 'status error';
@@ -594,42 +726,19 @@ HTML_TEMPLATE = """
             });
         }
         
-        // Simulate transfer progress
-        function simulateTransferProgress(transferId) {
-            receiveProgress.style.display = 'block';
-            receiveName.textContent = 'Loading...';
-            receiveSize.textContent = 'Calculating...';
+        // Display files for receiving
+        function displayReceiveFiles(files) {
+            receiveFileList.innerHTML = '';
+            receiveFileList.style.display = 'block';
             
-            // Get file info
-            fetch(`/transfer/${transferId}/info`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    receiveName.textContent = data.filename;
-                    receiveSize.textContent = formatFileSize(data.filesize);
-                    
-                    // Simulate progress
-                    let progress = 0;
-                    const interval = setInterval(() => {
-                        progress += 5;
-                        receiveBar.style.width = `${progress}%`;
-                        
-                        if (progress >= 100) {
-                            clearInterval(interval);
-                            receiveStatus.textContent = 'File received successfully!';
-                            receiveStatus.className = 'status success';
-                            
-                            // Show download button
-                            downloadBtn.href = `/download/${transferId}`;
-                            downloadBtn.textContent = `Download ${data.filename}`;
-                            downloadBtn.style.display = 'inline-block';
-                        }
-                    }, 200);
-                } else {
-                    receiveStatus.textContent = 'Error: ' + data.error;
-                    receiveStatus.className = 'status error';
-                    receiveBtn.disabled = false;
-                }
+            files.forEach(file => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <div class="file-name">${file.filename}</div>
+                    <div class="file-size">${formatFileSize(file.filesize)}</div>
+                `;
+                receiveFileList.appendChild(fileItem);
             });
         }
         
@@ -655,47 +764,96 @@ HTML_TEMPLATE = """
 </html>
 """
 
+# Flask Routes
 @app.route('/')
 def index():
     return render_template_string(HTML_TEMPLATE)
 
-@app.route('/upload', methods=['POST'])
-def upload_file():
-    if 'file' not in request.files:
-        return jsonify({'success': False, 'error': 'No file part'}), 400
-    
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'success': False, 'error': 'No selected file'}), 400
-    
-    # Generate a unique transfer ID
+@app.route('/create_transfer', methods=['POST'])
+def create_transfer():
+    data = request.json
     transfer_id = str(uuid.uuid4())
-    filename = file.filename
-    file_path = os.path.join(UPLOAD_FOLDER, f"{transfer_id}_{filename}")
-    file.save(file_path)
-    file_size = os.path.getsize(file_path)
     
-    # Store transfer information
     with transfer_lock:
         transfers[transfer_id] = {
-            'filename': filename,
-            'filepath': file_path,
-            'filesize': file_size,
+            'files': [],
+            'total_size': data['total_size'],
+            'file_count': data['file_count'],
             'created_at': time.time(),
-            'downloaded': False
+            'downloaded': False,
+            'chunks': {}
         }
     
-    # Start a thread to clean up the file after 1 hour
+    # Start cleanup thread
     cleanup_thread = threading.Thread(target=cleanup_transfer, args=(transfer_id,))
     cleanup_thread.daemon = True
     cleanup_thread.start()
     
     return jsonify({
         'success': True,
-        'transfer_id': transfer_id,
-        'filename': filename,
-        'filesize': file_size
+        'transfer_id': transfer_id
     })
+
+@app.route('/upload_chunk', methods=['POST'])
+def upload_chunk():
+    transfer_id = request.form.get('transfer_id')
+    file_id = request.form.get('file_id')
+    file_index = int(request.form.get('file_index'))
+    chunk_index = int(request.form.get('chunk_index'))
+    total_chunks = int(request.form.get('total_chunks'))
+    file_name = request.form.get('file_name')
+    file_size = int(request.form.get('file_size'))
+    chunk = request.files['chunk']
+    
+    with transfer_lock:
+        if transfer_id not in transfers:
+            return jsonify({'success': False, 'error': 'Invalid transfer ID'}), 400
+        
+        transfer = transfers[transfer_id]
+        
+        # Create directory for chunks if it doesn't exist
+        chunk_dir = os.path.join(UPLOAD_FOLDER, transfer_id, file_id)
+        os.makedirs(chunk_dir, exist_ok=True)
+        
+        # Save chunk
+        chunk_path = os.path.join(chunk_dir, f'chunk_{chunk_index}')
+        chunk.save(chunk_path)
+        
+        # Track chunks
+        if file_id not in transfer['chunks']:
+            transfer['chunks'][file_id] = {
+                'file_name': file_name,
+                'file_size': file_size,
+                'total_chunks': total_chunks,
+                'received_chunks': 0,
+                'file_index': file_index
+            }
+        
+        transfer['chunks'][file_id]['received_chunks'] += 1
+        
+        # Check if all chunks received
+        if transfer['chunks'][file_id]['received_chunks'] == total_chunks:
+            # Combine chunks into a single file
+            output_path = os.path.join(UPLOAD_FOLDER, transfer_id, f'file_{file_index}_{file_name}')
+            with open(output_path, 'wb') as outfile:
+                for i in range(total_chunks):
+                    chunk_path = os.path.join(chunk_dir, f'chunk_{i}')
+                    with open(chunk_path, 'rb') as infile:
+                        shutil.copyfileobj(infile, outfile)
+            
+            # Add to files list
+            transfer['files'].append({
+                'filename': file_name,
+                'filepath': output_path,
+                'filesize': file_size,
+                'file_index': file_index
+            })
+            
+            # Remove chunks
+            shutil.rmtree(chunk_dir)
+            del transfer['chunks'][file_id]
+    
+    return jsonify({'success': True})
 
 @app.route('/transfer/<transfer_id>')
 def check_transfer(transfer_id):
@@ -703,47 +861,67 @@ def check_transfer(transfer_id):
         exists = transfer_id in transfers and not transfers[transfer_id]['downloaded']
     return jsonify({'exists': exists})
 
-@app.route('/transfer/<transfer_id>/info')
-def transfer_info(transfer_id):
+@app.route('/transfer/<transfer_id>/files')
+def transfer_files(transfer_id):
     with transfer_lock:
         if transfer_id in transfers:
             transfer = transfers[transfer_id]
             return jsonify({
                 'success': True,
-                'filename': transfer['filename'],
-                'filesize': transfer['filesize']
+                'files': [{
+                    'filename': f['filename'],
+                    'filesize': f['filesize']
+                } for f in transfer['files']],
+                'total_size': transfer['total_size']
             })
     return jsonify({'success': False, 'error': 'Transfer not found'}), 404
 
-@app.route('/download/<transfer_id>')
-def download_file(transfer_id):
+@app.route('/download_all/<transfer_id>')
+def download_all(transfer_id):
     with transfer_lock:
         if transfer_id in transfers and not transfers[transfer_id]['downloaded']:
             transfer = transfers[transfer_id]
             transfer['downloaded'] = True
             
-            # Return the file for download
-            return send_file(
-                transfer['filepath'],
-                as_attachment=True,
-                download_name=transfer['filename']
-            )
+            # Create a zip file of all files
+            zip_path = os.path.join(UPLOAD_FOLDER, f'{transfer_id}.zip')
+            
+            # Create zip file
+            with zipfile.ZipFile(zip_path, 'w') as zipf:
+                for file in transfer['files']:
+                    zipf.write(file['filepath'], arcname=file['filename'])
+            
+            # Create response
+            response = make_response(send_file(zip_path, as_attachment=True, download_name=f'transfer-{transfer_id}.zip'))
+            
+            # Schedule cleanup
+            cleanup_thread = threading.Thread(target=cleanup_zip, args=(zip_path, transfer_id))
+            cleanup_thread.daemon = True
+            cleanup_thread.start()
+            
+            return response
     
     return "File not found or already downloaded", 404
 
+def cleanup_zip(zip_path, transfer_id):
+    """Clean up the zip file after download"""
+    time.sleep(10)  # Wait for download to complete
+    try:
+        if os.path.exists(zip_path):
+            os.unlink(zip_path)
+    except Exception as e:
+        print(f"Error deleting zip file: {e}")
+
 def cleanup_transfer(transfer_id):
-    """Clean up the transfer after 1 hour or after download"""
+    """Clean up the transfer after 1 hour"""
     time.sleep(3600)  # Wait for 1 hour
     
     with transfer_lock:
         if transfer_id in transfers:
-            # Delete the file
-            try:
-                filepath = transfers[transfer_id]['filepath']
-                if os.path.exists(filepath):
-                    os.unlink(filepath)
-            except Exception as e:
-                print(f"Error deleting file: {e}")
+            # Delete all files
+            transfer_dir = os.path.join(UPLOAD_FOLDER, transfer_id)
+            if os.path.exists(transfer_dir):
+                shutil.rmtree(transfer_dir)
             
             # Remove the transfer record
             del transfers[transfer_id]
