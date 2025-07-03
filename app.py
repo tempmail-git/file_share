@@ -24,7 +24,7 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FilePizza Clone</title>
+    <title>File sharing</title>
     <style>
         :root {
             --primary: #ff6b6b;
@@ -354,7 +354,7 @@ HTML_TEMPLATE = """
 <body>
     <div class="container">
         <header>
-            <div class="logo">🍕 FilePizza</div>
+            <div class="logo">File Sharing</div>
             <p class="tagline">Peer-to-peer file sharing in your browser. No server storage, no waiting.</p>
         </header>
         
