@@ -3,6 +3,8 @@ import uuid
 import time
 import threading
 import shutil
+import zipfile
+import io
 from flask import Flask, render_template_string, request, jsonify, send_file, make_response
 
 app = Flask(__name__)
@@ -879,38 +881,34 @@ def transfer_files(transfer_id):
 @app.route('/download_all/<transfer_id>')
 def download_all(transfer_id):
     with transfer_lock:
-        if transfer_id in transfers and not transfers[transfer_id]['downloaded']:
-            transfer = transfers[transfer_id]
-            transfer['downloaded'] = True
+        if transfer_id not in transfers:
+            return "Transfer not found", 404
             
-            # Create a zip file of all files
-            zip_path = os.path.join(UPLOAD_FOLDER, f'{transfer_id}.zip')
-            
-            # Create zip file
-            with zipfile.ZipFile(zip_path, 'w') as zipf:
-                for file in transfer['files']:
-                    zipf.write(file['filepath'], arcname=file['filename'])
-            
-            # Create response
-            response = make_response(send_file(zip_path, as_attachment=True, download_name=f'transfer-{transfer_id}.zip'))
-            
-            # Schedule cleanup
-            cleanup_thread = threading.Thread(target=cleanup_zip, args=(zip_path, transfer_id))
-            cleanup_thread.daemon = True
-            cleanup_thread.start()
-            
-            return response
-    
-    return "File not found or already downloaded", 404
-
-def cleanup_zip(zip_path, transfer_id):
-    """Clean up the zip file after download"""
-    time.sleep(10)  # Wait for download to complete
-    try:
-        if os.path.exists(zip_path):
-            os.unlink(zip_path)
-    except Exception as e:
-        print(f"Error deleting zip file: {e}")
+        transfer = transfers[transfer_id]
+        
+        if transfer['downloaded']:
+            return "Files already downloaded", 410  # Gone
+        
+        # Create in-memory zip file
+        memory_file = io.BytesIO()
+        with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+            for file in transfer['files']:
+                # Only add files that actually exist
+                if os.path.exists(file['filepath']):
+                    zf.write(file['filepath'], arcname=file['filename'])
+                else:
+                    print(f"File not found: {file['filepath']}")
+        
+        # Prepare response
+        memory_file.seek(0)
+        response = make_response(memory_file.getvalue())
+        response.headers['Content-Type'] = 'application/zip'
+        response.headers['Content-Disposition'] = f'attachment; filename="transfer_{transfer_id}.zip"'
+        
+        # Mark as downloaded
+        transfer['downloaded'] = True
+        
+        return response
 
 def cleanup_transfer(transfer_id):
     """Clean up the transfer after 1 hour"""
