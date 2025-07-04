@@ -17,14 +17,14 @@ transfer_lock = threading.Lock()
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# HTML template with modern UI
+# Modern HTML template with cohesive UI for both cards
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>File Sharing</title>
+    <title>FilePizza | Modern File Sharing</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto+Mono:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -449,191 +449,7 @@ HTML_TEMPLATE = """
             text-align: right;
         }
         
-        .file-progress {
-            width: 100%;
-            margin-top: 10px;
-        }
-        
-        .status {
-            padding: 15px;
-            border-radius: 12px;
-            margin: 20px 0;
-            text-align: center;
-            display: none;
-            border-left: 4px solid;
-            background: rgba(30, 30, 30, 0.7);
-        }
-        
-        .status.success {
-            border-color: var(--success);
-            color: var(--success);
-        }
-        
-        .status.error {
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-        
-        .instructions {
-            margin-top: 40px;
-            text-align: center;
-            color: var(--text-light);
-            font-size: 1.1rem;
-            max-width: 900px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        
-        .instructions h3 {
-            font-size: 1.8rem;
-            margin-bottom: 25px;
-            color: var(--text);
-            position: relative;
-            display: inline-block;
-        }
-        
-        .instructions h3::after {
-            content: '';
-            position: absolute;
-            bottom: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80px;
-            height: 3px;
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
-            border-radius: 3px;
-        }
-        
-        .steps {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 30px;
-            margin-top: 30px;
-        }
-        
-        .step-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: var(--radius);
-            padding: 25px;
-            width: 100%;
-            max-width: 250px;
-            text-align: center;
-            transition: var(--transition);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .step-card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow);
-        }
-        
-        .step-number {
-            width: 50px;
-            height: 50px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin: 0 auto 20px;
-            box-shadow: 0 5px 15px rgba(138, 43, 226, 0.4);
-        }
-        
-        .step-card h4 {
-            font-size: 1.3rem;
-            margin-bottom: 15px;
-            color: var(--text);
-        }
-        
-        .step-card p {
-            color: var(--text-light);
-            font-size: 1rem;
-        }
-        
-        .file-limit {
-            text-align: center;
-            margin-top: 20px;
-            color: var(--text-light);
-            font-size: 1rem;
-            font-style: italic;
-        }
-        
-        footer {
-            text-align: center;
-            margin-top: 60px;
-            padding: 30px;
-            color: var(--text-light);
-            font-size: 1rem;
-            border-top: 1px solid var(--gray);
-        }
-        
-        .footer-logo {
-            font-size: 2rem;
-            color: var(--primary);
-            margin-bottom: 15px;
-        }
-        
-        @media (max-width: 768px) {
-            .cards-container {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .card {
-                max-width: 100%;
-            }
-            
-            .steps {
-                flex-direction: column;
-                align-items: center;
-            }
-        }
-        
-        /* Animations */
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        @keyframes slideUp {
-            from { 
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to { 
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        @keyframes shimmer {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-        }
-        
-        /* Scrollbar styling */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: var(--dark);
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: var(--primary);
-            border-radius: 4px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--primary-light);
-        }
-
+        /* Enhanced Receiving Card */
         .receive-card {
             position: relative;
             overflow: hidden;
@@ -762,7 +578,152 @@ HTML_TEMPLATE = """
             margin-top: 5px;
         }
         
-        /* Animation for progress complete */
+        .instructions {
+            margin-top: 40px;
+            text-align: center;
+            color: var(--text-light);
+            font-size: 1.1rem;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .instructions h3 {
+            font-size: 1.8rem;
+            margin-bottom: 25px;
+            color: var(--text);
+            position: relative;
+            display: inline-block;
+        }
+        
+        .instructions h3::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border-radius: 3px;
+        }
+        
+        .steps {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 30px;
+        }
+        
+        .step-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius);
+            padding: 25px;
+            width: 100%;
+            max-width: 250px;
+            text-align: center;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .step-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow);
+        }
+        
+        .step-number {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 0 auto 20px;
+            box-shadow: 0 5px 15px rgba(138, 43, 226, 0.4);
+        }
+        
+        .step-card h4 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: var(--text);
+        }
+        
+        .step-card p {
+            color: var(--text-light);
+            font-size: 1rem;
+        }
+        
+        .file-limit {
+            text-align: center;
+            margin-top: 20px;
+            color: var(--text-light);
+            font-size: 1rem;
+            font-style: italic;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 30px;
+            color: var(--text-light);
+            font-size: 1rem;
+            border-top: 1px solid var(--gray);
+        }
+        
+        .footer-logo {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+        
+        @media (max-width: 768px) {
+            .cards-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .card {
+                max-width: 100%;
+            }
+            
+            .steps {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .file-preview-item {
+                width: 100%;
+            }
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.05); }
@@ -772,12 +733,30 @@ HTML_TEMPLATE = """
         .download-complete {
             animation: pulse 2s infinite;
         }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--dark);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-light);
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <div class="logo">File Sharing</div>
+            <div class="logo">FilePizza</div>
             <p class="tagline">Fast, secure file sharing with end-to-end encryption. No server storage, no limits.</p>
         </header>
         
@@ -834,46 +813,47 @@ HTML_TEMPLATE = """
             </div>
             
             <!-- Receiver Card -->
-        <div class="card receive-card">
-            <div class="card-header">
-                <div class="card-icon">🔓</div>
-                <h2 class="card-title">Receive Files</h2>
-            </div>
-            
-            <div class="card-content">
-                <div class="id-input-container">
-                    <input type="text" id="peerId" class="peer-id-input" placeholder="Enter transfer ID">
+            <div class="card receive-card">
+                <div class="card-header">
+                    <div class="card-icon">🔓</div>
+                    <h2 class="card-title">Receive Files</h2>
                 </div>
                 
-                <button class="btn btn-secondary" id="receiveBtn">
-                    <span class="btn-text">Connect to Transfer</span>
-                    <span class="btn-loader" style="display:none;">⏳</span>
-                </button>
-                
-                <div class="file-preview" id="filePreview">
-                    <!-- Files will appear here -->
-                </div>
-                
-                <div class="progress-container" id="receiveProgress" style="display: none;">
-                    <div class="progress-header">
-                        <span id="receiveStatusText">Establishing connection...</span>
-                        <span id="receivePercent">0%</span>
+                <div class="card-content">
+                    <div class="id-input-container">
+                        <input type="text" id="peerId" class="peer-id-input" placeholder="Enter transfer ID">
                     </div>
-                    <div class="progress-bar">
-                        <div class="progress" id="receiveBar"></div>
+                    
+                    <button class="btn btn-secondary" id="receiveBtn">
+                        <span class="btn-text">Connect to Transfer</span>
+                        <span class="btn-loader" style="display:none;">⏳</span>
+                    </button>
+                    
+                    <div class="file-preview" id="filePreview">
+                        <!-- Files will appear here -->
                     </div>
+                    
+                    <div class="progress-container" id="receiveProgress" style="display: none;">
+                        <div class="progress-header">
+                            <span id="receiveStatusText">Establishing connection...</span>
+                            <span id="receivePercent">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress" id="receiveBar"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="transfer-complete" id="transferComplete">
+                        <i>🎉</i>
+                        <h3>Transfer Complete!</h3>
+                        <p>Your files are ready to download</p>
+                    </div>
+                    
+                    <a class="btn btn-accent download-complete" id="downloadBtn" style="display: none;">
+                        <span class="btn-text">Download All Files</span>
+                        <span class="btn-icon">⬇️</span>
+                    </a>
                 </div>
-                
-                <div class="transfer-complete" id="transferComplete">
-                    <i>🎉</i>
-                    <h3>Transfer Complete!</h3>
-                    <p>Your files are ready to download</p>
-                </div>
-                
-                <a class="btn btn-accent download-complete" id="downloadBtn" style="display: none;">
-                    <span class="btn-text">Download All Files</span>
-                    <span class="btn-icon">⬇️</span>
-                </a>
             </div>
         </div>
         
@@ -908,10 +888,10 @@ HTML_TEMPLATE = """
         </div>
         
         <footer>
-            <div class="footer-logo">File Sharing</div>
+            <div class="footer-logo">FilePizza</div>
             <p>Modern File Sharing Platform | Built with Python Flask</p>
             <p>Files are transferred securely with end-to-end encryption</p>
-            <p style="margin-top: 15px; font-size: 0.9rem;">&copy; 2023 . All rights reserved.</p>
+            <p style="margin-top: 15px; font-size: 0.9rem;">&copy; 2023 FilePizza. All rights reserved.</p>
         </footer>
     </div>
 
@@ -932,12 +912,14 @@ HTML_TEMPLATE = """
         
         const peerIdInput = document.getElementById('peerId');
         const receiveBtn = document.getElementById('receiveBtn');
-        const receiveFileList = document.getElementById('receiveFileList');
+        const receiveBtnText = receiveBtn.querySelector('.btn-text');
+        const receiveBtnLoader = receiveBtn.querySelector('.btn-loader');
+        const filePreview = document.getElementById('filePreview');
         const receiveProgress = document.getElementById('receiveProgress');
         const receiveBar = document.getElementById('receiveBar');
         const receiveStatusText = document.getElementById('receiveStatusText');
         const receivePercent = document.getElementById('receivePercent');
-        const receiveStatus = document.getElementById('receiveStatus');
+        const transferComplete = document.getElementById('transferComplete');
         const downloadBtn = document.getElementById('downloadBtn');
         
         // Variables
@@ -1154,120 +1136,9 @@ HTML_TEMPLATE = """
             const transferId = peerIdInput.value.trim();
             if (!transferId) return;
             
-            receiveBtn.disabled = true;
-            receiveStatus.textContent = 'Connecting to transfer source...';
-            receiveStatus.className = 'status';
-            receiveStatus.style.display = 'block';
-            
-            // Check if transfer exists
-            fetch(`/transfer/${transferId}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.exists) {
-                    receiveStatus.textContent = 'Transfer found! Retrieving file information...';
-                    
-                    // Get file list
-                    fetch(`/transfer/${transferId}/files`)
-                    .then(response => response.json())
-                    .then(fileData => {
-                        if (fileData.success) {
-                            displayReceiveFiles(fileData.files);
-                            receiveStatus.textContent = `Ready to download ${fileData.files.length} files`;
-                            receiveStatus.className = 'status success';
-                            
-                            // Show download button
-                            downloadBtn.href = `/download_all/${transferId}`;
-                            downloadBtn.textContent = `Download All Files (${formatFileSize(fileData.total_size)})`;
-                            downloadBtn.style.display = 'inline-block';
-                            
-                            // Show progress container
-                            receiveProgress.style.display = 'block';
-                            simulateTransferProgress();
-                        } else {
-                            receiveStatus.textContent = 'Error: ' + fileData.error;
-                            receiveStatus.className = 'status error';
-                            receiveBtn.disabled = false;
-                        }
-                    });
-                } else {
-                    receiveStatus.textContent = 'Transfer not found. Please check the ID.';
-                    receiveStatus.className = 'status error';
-                    receiveBtn.disabled = false;
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                receiveStatus.textContent = 'Error connecting to server';
-                receiveStatus.className = 'status error';
-                receiveBtn.disabled = false;
-            });
-        }
-        
-        // Display files for receiving
-        function displayReceiveFiles(files) {
-            receiveFileList.innerHTML = `
-                <div class="file-list-header">
-                    <span>File Name</span>
-                    <span>Size</span>
-                </div>
-            `;
-            receiveFileList.style.display = 'block';
-            
-            files.forEach(file => {
-                const fileItem = document.createElement('div');
-                fileItem.className = 'file-item';
-                fileItem.innerHTML = `
-                    <div class="file-name">
-                        <span class="file-icon">📄</span>
-                        ${file.filename}
-                    </div>
-                    <div class="file-size">${formatFileSize(file.filesize)}</div>
-                `;
-                receiveFileList.appendChild(fileItem);
-            });
-        }
-        
-        // Simulate transfer progress
-        function simulateTransferProgress() {
-            let progress = 0;
-            const interval = setInterval(() => {
-                progress += 2;
-                if (progress > 100) progress = 100;
-                
-                receiveBar.style.width = `${progress}%`;
-                receivePercent.textContent = `${progress}%`;
-                receiveStatusText.textContent = `Downloading... ${progress}%`;
-                
-                if (progress >= 100) {
-                    clearInterval(interval);
-                    receiveStatusText.textContent = 'Download complete!';
-                }
-            }, 100);
-        }
-        
-        // Show status message
-        function showStatus(message, type) {
-            // In a real implementation, this would show a status message
-            console.log(`${type}: ${message}`);
-        }
-        
-        // Initialize
-        function init() {
-            // Check if we have a transfer ID in the URL
-            const pathParts = window.location.pathname.split('/');
-            if (pathParts.length > 2 && pathParts[1] === 'receive') {
-                peerIdInput.value = pathParts[2];
-            }
-        }
-
-        // Update the JavaScript for the enhanced receiving card
-        const connectToPeer = () => {
-            const transferId = peerIdInput.value.trim();
-            if (!transferId) return;
-            
             // Show loading state
-            receiveBtn.querySelector('.btn-text').textContent = 'Connecting...';
-            receiveBtn.querySelector('.btn-loader').style.display = 'inline';
+            receiveBtnText.textContent = 'Connecting...';
+            receiveBtnLoader.style.display = 'inline';
             receiveBtn.disabled = true;
             
             // Show progress container
@@ -1299,14 +1170,30 @@ HTML_TEMPLATE = """
                                 downloadBtn.querySelector('.btn-text').textContent = 
                                     `Download ${fileData.files.length} File${fileData.files.length > 1 ? 's' : ''} (${totalSize})`;
                             });
+                        } else {
+                            receiveBtnText.textContent = 'Connect to Transfer';
+                            receiveBtnLoader.style.display = 'none';
+                            receiveBtn.disabled = false;
+                            receiveProgress.style.display = 'none';
                         }
                     });
+                } else {
+                    receiveBtnText.textContent = 'Connect to Transfer';
+                    receiveBtnLoader.style.display = 'none';
+                    receiveBtn.disabled = false;
+                    receiveProgress.style.display = 'none';
                 }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                receiveBtnText.textContent = 'Connect to Transfer';
+                receiveBtnLoader.style.display = 'none';
+                receiveBtn.disabled = false;
+                receiveProgress.style.display = 'none';
             });
-        };
+        }
         
         const displayFilePreview = (files) => {
-            const filePreview = document.getElementById('filePreview');
             filePreview.innerHTML = '';
             filePreview.style.display = 'flex';
             
@@ -1347,7 +1234,22 @@ HTML_TEMPLATE = """
                 }
             }, 100);
         };
-
+        
+        // Show status message
+        function showStatus(message, type) {
+            // In a real implementation, this would show a status message
+            console.log(`${type}: ${message}`);
+        }
+        
+        // Initialize
+        function init() {
+            // Check if we have a transfer ID in the URL
+            const pathParts = window.location.pathname.split('/');
+            if (pathParts.length > 2 && pathParts[1] === 'receive') {
+                peerIdInput.value = pathParts[2];
+            }
+        }
+        
         // Start the app
         init();
     </script>
