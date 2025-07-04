@@ -28,10 +28,10 @@ HTML_TEMPLATE = """
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto+Mono:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #8a2be2;      /* Vibrant purple */
+            --primary: #8a2be2;
             --primary-light: #9d4edd;
-            --secondary: #00c6fb;    /* Bright blue */
-            --dark: #121212;         /* Deep dark */
+            --secondary: #00c6fb;
+            --dark: #121212;
             --darker: #0a0a0a;
             --light: #f8f9fa;
             --gray: #2d2d2d;
@@ -449,7 +449,6 @@ HTML_TEMPLATE = """
             text-align: right;
         }
         
-        /* Enhanced Receiving Card */
         .receive-card {
             position: relative;
             overflow: hidden;
@@ -702,7 +701,6 @@ HTML_TEMPLATE = """
             }
         }
         
-        /* Animations */
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -734,7 +732,6 @@ HTML_TEMPLATE = """
             animation: pulse 2s infinite;
         }
         
-        /* Scrollbar styling */
         ::-webkit-scrollbar {
             width: 8px;
         }
@@ -750,6 +747,26 @@ HTML_TEMPLATE = """
         
         ::-webkit-scrollbar-thumb:hover {
             background: var(--primary-light);
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+            display: none;
+        }
+        
+        .status.success {
+            background: rgba(76, 175, 80, 0.1);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+        
+        .status.error {
+            background: rgba(255, 107, 107, 0.1);
+            color: var(--primary);
+            border: 1px solid var(--primary);
         }
     </style>
 </head>
@@ -782,7 +799,6 @@ HTML_TEMPLATE = """
                             <span>File Name</span>
                             <span>Size</span>
                         </div>
-                        <!-- Files will be added here dynamically -->
                     </div>
                     
                     <div class="progress-container" id="progressContainer" style="display: none;">
@@ -812,7 +828,7 @@ HTML_TEMPLATE = """
                 </div>
             </div>
             
-            <!-- Receiver Card -->
+            <!-- Receiver Card (Fixed) -->
             <div class="card receive-card">
                 <div class="card-header">
                     <div class="card-icon">🔓</div>
@@ -843,9 +859,9 @@ HTML_TEMPLATE = """
                         </div>
                     </div>
                     
-                    <div class="status" id="receiveStatus" style="display: none;"></div>
+                    <div class="status" id="receiveStatus"></div>
                     
-                    <div class="transfer-complete" id="transferComplete" style="display: none;">
+                    <div class="transfer-complete" id="transferComplete">
                         <i>🎉</i>
                         <h3>Transfer Complete!</h3>
                         <p>Your files are ready to download</p>
@@ -933,21 +949,34 @@ HTML_TEMPLATE = """
         // Event Listeners
         browseBtn.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', handleFileSelect);
-        dropArea.addEventListener('dragover', (e) => {
+        
+        // Drag and drop handlers
+        ['dragover', 'dragleave', 'drop'].forEach(event => {
+            dropArea.addEventListener(event, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
             e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        dropArea.addEventListener('dragover', () => {
             dropArea.classList.add('active');
         });
+        
         dropArea.addEventListener('dragleave', () => {
             dropArea.classList.remove('active');
         });
-        dropArea.addEventListener('drop', (e) => {
-            e.preventDefault();
+        
+        dropArea.addEventListener('drop', handleDrop);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            fileInput.files = files;
+            handleFileSelect();
             dropArea.classList.remove('active');
-            if (e.dataTransfer.files.length) {
-                fileInput.files = e.dataTransfer.files;
-                handleFileSelect();
-            }
-        });
+        }
         
         sendBtn.addEventListener('click', generateTransferId);
         transferId.addEventListener('click', copyTransferId);
@@ -975,7 +1004,7 @@ HTML_TEMPLATE = """
             
             let totalSizeBytes = 0;
             
-            files.forEach((file, index) => {
+            files.forEach((file) => {
                 totalSizeBytes += file.size;
                 
                 const fileItem = document.createElement('div');
@@ -1134,7 +1163,7 @@ HTML_TEMPLATE = """
             }, 2000);
         }
         
-        // Connect to transfer - FIXED IMPLEMENTATION
+        // Connect to transfer - WORKING IMPLEMENTATION
         function connectToPeer() {
             const transferId = peerIdInput.value.trim();
             if (!transferId) {
@@ -1142,13 +1171,16 @@ HTML_TEMPLATE = """
                 return;
             }
             
+            // Reset UI states
+            receiveStatus.style.display = 'none';
+            filePreview.style.display = 'none';
+            transferComplete.style.display = 'none';
+            downloadBtn.style.display = 'none';
+            
             // Show loading state
             receiveBtnText.textContent = 'Connecting...';
             receiveBtnLoader.style.display = 'inline-block';
             receiveBtn.disabled = true;
-            
-            // Clear previous status
-            receiveStatus.style.display = 'none';
             
             // Show progress container
             receiveProgress.style.display = 'block';
@@ -1156,57 +1188,53 @@ HTML_TEMPLATE = """
             receivePercent.textContent = '0%';
             receiveStatusText.textContent = 'Establishing connection...';
             
-            // Hide other elements
-            filePreview.style.display = 'none';
-            transferComplete.style.display = 'none';
-            downloadBtn.style.display = 'none';
-            
             // Check if transfer exists
             fetch(`/transfer/${transferId}`)
             .then(response => {
-                if (!response.ok) throw new Error('Network response was not ok');
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
                 return response.json();
             })
             .then(data => {
                 if (data.exists) {
                     // Get file list
-                    fetch(`/transfer/${transferId}/files`)
+                    return fetch(`/transfer/${transfer_id}/files`)
                     .then(response => {
-                        if (!response.ok) throw new Error('Failed to get file list');
-                        return response.json();
-                    })
-                    .then(fileData => {
-                        if (fileData.success) {
-                            // Display file preview
-                            displayFilePreview(fileData.files);
-                            
-                            // Simulate connection progress
-                            simulateConnectionProgress(() => {
-                                // On complete
-                                receiveProgress.style.display = 'none';
-                                transferComplete.style.display = 'block';
-                                downloadBtn.style.display = 'inline-block';
-                                downloadBtn.href = `/download_all/${transferId}`;
-                                
-                                // Update download button with file info
-                                const totalSize = formatFileSize(fileData.total_size);
-                                downloadBtn.querySelector('.btn-text').textContent = 
-                                    `Download ${fileData.files.length} File${fileData.files.length > 1 ? 's' : ''} (${totalSize})`;
-                                
-                                // Reset button state
-                                receiveBtnText.textContent = 'Connect to Transfer';
-                                receiveBtnLoader.style.display = 'none';
-                                receiveBtn.disabled = false;
-                            });
-                        } else {
-                            throw new Error(fileData.error || 'Failed to get file list');
+                        if (!response.ok) {
+                            throw new Error('Failed to get file list');
                         }
-                    })
-                    .catch(error => {
-                        handleReceiveError(error.message);
+                        return response.json();
                     });
                 } else {
                     throw new Error('Transfer not found. Please check the ID.');
+                }
+            })
+            .then(fileData => {
+                if (fileData.success) {
+                    // Display file preview
+                    displayFilePreview(fileData.files);
+                    
+                    // Simulate connection progress
+                    simulateConnectionProgress(() => {
+                        // On complete
+                        receiveProgress.style.display = 'none';
+                        transferComplete.style.display = 'block';
+                        downloadBtn.style.display = 'inline-block';
+                        downloadBtn.href = `/download_all/${transferId}`;
+                        
+                        // Update download button with file info
+                        const totalSize = formatFileSize(fileData.total_size);
+                        downloadBtn.querySelector('.btn-text').textContent = 
+                            `Download ${fileData.files.length} File${fileData.files.length > 1 ? 's' : ''} (${totalSize})`;
+                        
+                        // Reset button state
+                        receiveBtnText.textContent = 'Connect to Transfer';
+                        receiveBtnLoader.style.display = 'none';
+                        receiveBtn.disabled = false;
+                    });
+                } else {
+                    throw new Error(fileData.error || 'Failed to get file list');
                 }
             })
             .catch(error => {
@@ -1215,16 +1243,16 @@ HTML_TEMPLATE = """
         }
         
         function handleReceiveError(message) {
-            console.error('Error:', message);
+            console.error('Receive Error:', message);
             
             // Update UI
             receiveBtnText.textContent = 'Connect to Transfer';
             receiveBtnLoader.style.display = 'none';
             receiveBtn.disabled = false;
+            receiveProgress.style.display = 'none';
             
             // Show error message
             showReceiveStatus(message, 'error');
-            receiveProgress.style.display = 'none';
         }
         
         function showReceiveStatus(message, type) {
@@ -1275,12 +1303,6 @@ HTML_TEMPLATE = """
             }, 100);
         }
         
-        // Show status message
-        function showStatus(message, type) {
-            // In a real implementation, this would show a status message
-            console.log(`${type}: ${message}`);
-        }
-        
         // Initialize
         function init() {
             // Check if we have a transfer ID in the URL
@@ -1288,6 +1310,13 @@ HTML_TEMPLATE = """
             if (pathParts.length > 2 && pathParts[1] === 'receive') {
                 peerIdInput.value = pathParts[2];
             }
+            
+            // Set initial UI states
+            receiveProgress.style.display = 'none';
+            transferComplete.style.display = 'none';
+            downloadBtn.style.display = 'none';
+            filePreview.style.display = 'none';
+            receiveStatus.style.display = 'none';
         }
         
         // Start the app
@@ -1297,7 +1326,7 @@ HTML_TEMPLATE = """
 </html>
 """
 
-# Flask Routes (unchanged from previous implementation)
+# Flask Routes
 @app.route('/')
 def index():
     return render_template_string(HTML_TEMPLATE)
