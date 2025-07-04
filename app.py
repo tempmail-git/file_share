@@ -633,6 +633,145 @@ HTML_TEMPLATE = """
         ::-webkit-scrollbar-thumb:hover {
             background: var(--primary-light);
         }
+
+        .receive-card {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .receive-card::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(0,198,251,0.1) 0%, transparent 70%);
+            transform: rotate(30deg);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        .receive-card:hover::after {
+            opacity: 1;
+        }
+        
+        .id-input-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .id-input-container::before {
+            content: '🔑';
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.2rem;
+            z-index: 2;
+        }
+        
+        .peer-id-input {
+            width: 100%;
+            padding: 15px 15px 15px 45px;
+            border-radius: 50px;
+            border: 2px solid var(--gray);
+            background: rgba(30, 30, 30, 0.7);
+            color: var(--text);
+            font-size: 1rem;
+            transition: var(--transition);
+            font-family: 'Roboto Mono', monospace;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .peer-id-input:focus {
+            outline: none;
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 3px rgba(0, 198, 251, 0.3);
+        }
+        
+        .peer-id-input::placeholder {
+            color: var(--text-light);
+            opacity: 0.7;
+        }
+        
+        .transfer-complete {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            background: rgba(76, 175, 80, 0.1);
+            border-radius: var(--radius);
+            margin: 20px 0;
+            border-left: 4px solid var(--success);
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .transfer-complete i {
+            font-size: 2.5rem;
+            color: var(--success);
+            margin-bottom: 15px;
+            display: block;
+        }
+        
+        .file-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .file-preview-item {
+            background: rgba(30, 30, 30, 0.7);
+            border-radius: 12px;
+            padding: 15px;
+            width: calc(50% - 8px);
+            display: flex;
+            align-items: center;
+            transition: var(--transition);
+            border: 1px solid var(--gray);
+        }
+        
+        .file-preview-item:hover {
+            transform: translateY(-5px);
+            border-color: var(--secondary);
+        }
+        
+        .file-preview-icon {
+            font-size: 1.8rem;
+            margin-right: 15px;
+            color: var(--secondary);
+        }
+        
+        .file-preview-info {
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .file-preview-name {
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .file-preview-size {
+            font-size: 0.8rem;
+            color: var(--text-light);
+            margin-top: 5px;
+        }
+        
+        /* Animation for progress complete */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .download-complete {
+            animation: pulse 2s infinite;
+        }
     </style>
 </head>
 <body>
@@ -695,40 +834,46 @@ HTML_TEMPLATE = """
             </div>
             
             <!-- Receiver Card -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-icon">📥</div>
-                    <h2 class="card-title">Receive Files</h2>
+        <div class="card receive-card">
+            <div class="card-header">
+                <div class="card-icon">🔓</div>
+                <h2 class="card-title">Receive Files</h2>
+            </div>
+            
+            <div class="card-content">
+                <div class="id-input-container">
+                    <input type="text" id="peerId" class="peer-id-input" placeholder="Enter transfer ID">
                 </div>
                 
-                <div class="card-content">
-                    <input type="text" id="peerId" class="link-input" placeholder="Enter transfer ID">
-                    <button class="btn btn-secondary" id="receiveBtn" style="margin-top: 20px;">Connect to Transfer</button>
-                    
-                    <div class="file-list" id="receiveFileList" style="display: none;">
-                        <div class="file-list-header">
-                            <span>File Name</span>
-                            <span>Size</span>
-                        </div>
-                        <!-- Received files will appear here -->
-                    </div>
-                    
-                    <div class="progress-container" id="receiveProgress" style="display: none;">
-                        <div class="progress-header">
-                            <span id="receiveStatusText">Preparing download...</span>
-                            <span id="receivePercent">0%</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress" id="receiveBar"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="status" id="receiveStatus"></div>
-                    
-                    <a class="btn btn-accent" id="downloadBtn" style="display: none; margin-top: 20px;">
-                        <span class="btn-text">Download All Files</span>
-                    </a>
+                <button class="btn btn-secondary" id="receiveBtn">
+                    <span class="btn-text">Connect to Transfer</span>
+                    <span class="btn-loader" style="display:none;">⏳</span>
+                </button>
+                
+                <div class="file-preview" id="filePreview">
+                    <!-- Files will appear here -->
                 </div>
+                
+                <div class="progress-container" id="receiveProgress" style="display: none;">
+                    <div class="progress-header">
+                        <span id="receiveStatusText">Establishing connection...</span>
+                        <span id="receivePercent">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress" id="receiveBar"></div>
+                    </div>
+                </div>
+                
+                <div class="transfer-complete" id="transferComplete">
+                    <i>🎉</i>
+                    <h3>Transfer Complete!</h3>
+                    <p>Your files are ready to download</p>
+                </div>
+                
+                <a class="btn btn-accent download-complete" id="downloadBtn" style="display: none;">
+                    <span class="btn-text">Download All Files</span>
+                    <span class="btn-icon">⬇️</span>
+                </a>
             </div>
         </div>
         
@@ -1114,7 +1259,95 @@ HTML_TEMPLATE = """
                 peerIdInput.value = pathParts[2];
             }
         }
+
+        // Update the JavaScript for the enhanced receiving card
+        const connectToPeer = () => {
+            const transferId = peerIdInput.value.trim();
+            if (!transferId) return;
+            
+            // Show loading state
+            receiveBtn.querySelector('.btn-text').textContent = 'Connecting...';
+            receiveBtn.querySelector('.btn-loader').style.display = 'inline';
+            receiveBtn.disabled = true;
+            
+            // Show progress container
+            receiveProgress.style.display = 'block';
+            
+            // Check if transfer exists
+            fetch(`/transfer/${transferId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.exists) {
+                    // Get file list
+                    fetch(`/transfer/${transferId}/files`)
+                    .then(response => response.json())
+                    .then(fileData => {
+                        if (fileData.success) {
+                            // Display file preview
+                            displayFilePreview(fileData.files);
+                            
+                            // Simulate connection progress
+                            simulateConnectionProgress(() => {
+                                // On complete
+                                receiveProgress.style.display = 'none';
+                                transferComplete.style.display = 'block';
+                                downloadBtn.style.display = 'inline-block';
+                                downloadBtn.href = `/download_all/${transferId}`;
+                                
+                                // Update download button with file info
+                                const totalSize = formatFileSize(fileData.total_size);
+                                downloadBtn.querySelector('.btn-text').textContent = 
+                                    `Download ${fileData.files.length} File${fileData.files.length > 1 ? 's' : ''} (${totalSize})`;
+                            });
+                        }
+                    });
+                }
+            });
+        };
         
+        const displayFilePreview = (files) => {
+            const filePreview = document.getElementById('filePreview');
+            filePreview.innerHTML = '';
+            filePreview.style.display = 'flex';
+            
+            files.forEach(file => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-preview-item';
+                fileItem.innerHTML = `
+                    <div class="file-preview-icon">📄</div>
+                    <div class="file-preview-info">
+                        <div class="file-preview-name">${file.filename}</div>
+                        <div class="file-preview-size">${formatFileSize(file.filesize)}</div>
+                    </div>
+                `;
+                filePreview.appendChild(fileItem);
+            });
+        };
+        
+        const simulateConnectionProgress = (onComplete) => {
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 2;
+                if (progress > 100) progress = 100;
+                
+                receiveBar.style.width = `${progress}%`;
+                receivePercent.textContent = `${progress}%`;
+                
+                if (progress < 30) {
+                    receiveStatusText.textContent = `Verifying transfer... ${progress}%`;
+                } else if (progress < 70) {
+                    receiveStatusText.textContent = `Preparing files... ${progress}%`;
+                } else {
+                    receiveStatusText.textContent = `Finalizing... ${progress}%`;
+                }
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    onComplete();
+                }
+            }, 100);
+        };
+
         // Start the app
         init();
     </script>
