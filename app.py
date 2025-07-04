@@ -1163,7 +1163,7 @@ HTML_TEMPLATE = """
             }, 2000);
         }
         
-        // Connect to transfer - WORKING IMPLEMENTATION
+        // Connect to transfer - FIXED IMPLEMENTATION
         function connectToPeer() {
             const transferId = peerIdInput.value.trim();
             if (!transferId) {
@@ -1198,8 +1198,8 @@ HTML_TEMPLATE = """
             })
             .then(data => {
                 if (data.exists) {
-                    // Get file list
-                    return fetch(`/transfer/${transfer_id}/files`)
+                    // Get file list - FIXED VARIABLE NAME
+                    return fetch(`/transfer/${transferId}/files`)
                     .then(response => {
                         if (!response.ok) {
                             throw new Error('Failed to get file list');
