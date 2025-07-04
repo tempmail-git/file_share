@@ -17,7 +17,7 @@ transfer_lock = threading.Lock()
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Modern HTML template with cohesive UI for both cards
+# Modern HTML template with fixed receiving card functionality
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en">
@@ -843,7 +843,9 @@ HTML_TEMPLATE = """
                         </div>
                     </div>
                     
-                    <div class="transfer-complete" id="transferComplete">
+                    <div class="status" id="receiveStatus" style="display: none;"></div>
+                    
+                    <div class="transfer-complete" id="transferComplete" style="display: none;">
                         <i>🎉</i>
                         <h3>Transfer Complete!</h3>
                         <p>Your files are ready to download</p>
@@ -919,6 +921,7 @@ HTML_TEMPLATE = """
         const receiveBar = document.getElementById('receiveBar');
         const receiveStatusText = document.getElementById('receiveStatusText');
         const receivePercent = document.getElementById('receivePercent');
+        const receiveStatus = document.getElementById('receiveStatus');
         const transferComplete = document.getElementById('transferComplete');
         const downloadBtn = document.getElementById('downloadBtn');
         
@@ -1131,27 +1134,47 @@ HTML_TEMPLATE = """
             }, 2000);
         }
         
-        // Connect to peer
+        // Connect to transfer - FIXED IMPLEMENTATION
         function connectToPeer() {
             const transferId = peerIdInput.value.trim();
-            if (!transferId) return;
+            if (!transferId) {
+                showReceiveStatus('Please enter a transfer ID', 'error');
+                return;
+            }
             
             // Show loading state
             receiveBtnText.textContent = 'Connecting...';
-            receiveBtnLoader.style.display = 'inline';
+            receiveBtnLoader.style.display = 'inline-block';
             receiveBtn.disabled = true;
+            
+            // Clear previous status
+            receiveStatus.style.display = 'none';
             
             // Show progress container
             receiveProgress.style.display = 'block';
+            receiveBar.style.width = '0%';
+            receivePercent.textContent = '0%';
+            receiveStatusText.textContent = 'Establishing connection...';
+            
+            // Hide other elements
+            filePreview.style.display = 'none';
+            transferComplete.style.display = 'none';
+            downloadBtn.style.display = 'none';
             
             // Check if transfer exists
             fetch(`/transfer/${transferId}`)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
             .then(data => {
                 if (data.exists) {
                     // Get file list
                     fetch(`/transfer/${transferId}/files`)
-                    .then(response => response.json())
+                    .then(response => {
+                        if (!response.ok) throw new Error('Failed to get file list');
+                        return response.json();
+                    })
                     .then(fileData => {
                         if (fileData.success) {
                             // Display file preview
@@ -1169,31 +1192,48 @@ HTML_TEMPLATE = """
                                 const totalSize = formatFileSize(fileData.total_size);
                                 downloadBtn.querySelector('.btn-text').textContent = 
                                     `Download ${fileData.files.length} File${fileData.files.length > 1 ? 's' : ''} (${totalSize})`;
+                                
+                                // Reset button state
+                                receiveBtnText.textContent = 'Connect to Transfer';
+                                receiveBtnLoader.style.display = 'none';
+                                receiveBtn.disabled = false;
                             });
                         } else {
-                            receiveBtnText.textContent = 'Connect to Transfer';
-                            receiveBtnLoader.style.display = 'none';
-                            receiveBtn.disabled = false;
-                            receiveProgress.style.display = 'none';
+                            throw new Error(fileData.error || 'Failed to get file list');
                         }
+                    })
+                    .catch(error => {
+                        handleReceiveError(error.message);
                     });
                 } else {
-                    receiveBtnText.textContent = 'Connect to Transfer';
-                    receiveBtnLoader.style.display = 'none';
-                    receiveBtn.disabled = false;
-                    receiveProgress.style.display = 'none';
+                    throw new Error('Transfer not found. Please check the ID.');
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                receiveBtnText.textContent = 'Connect to Transfer';
-                receiveBtnLoader.style.display = 'none';
-                receiveBtn.disabled = false;
-                receiveProgress.style.display = 'none';
+                handleReceiveError(error.message);
             });
         }
         
-        const displayFilePreview = (files) => {
+        function handleReceiveError(message) {
+            console.error('Error:', message);
+            
+            // Update UI
+            receiveBtnText.textContent = 'Connect to Transfer';
+            receiveBtnLoader.style.display = 'none';
+            receiveBtn.disabled = false;
+            
+            // Show error message
+            showReceiveStatus(message, 'error');
+            receiveProgress.style.display = 'none';
+        }
+        
+        function showReceiveStatus(message, type) {
+            receiveStatus.textContent = message;
+            receiveStatus.className = `status ${type === 'error' ? 'error' : ''}`;
+            receiveStatus.style.display = 'block';
+        }
+        
+        function displayFilePreview(files) {
             filePreview.innerHTML = '';
             filePreview.style.display = 'flex';
             
@@ -1209,9 +1249,9 @@ HTML_TEMPLATE = """
                 `;
                 filePreview.appendChild(fileItem);
             });
-        };
+        }
         
-        const simulateConnectionProgress = (onComplete) => {
+        function simulateConnectionProgress(onComplete) {
             let progress = 0;
             const interval = setInterval(() => {
                 progress += 2;
@@ -1233,7 +1273,7 @@ HTML_TEMPLATE = """
                     onComplete();
                 }
             }, 100);
-        };
+        }
         
         // Show status message
         function showStatus(message, type) {
@@ -1257,7 +1297,7 @@ HTML_TEMPLATE = """
 </html>
 """
 
-# Flask Routes
+# Flask Routes (unchanged from previous implementation)
 @app.route('/')
 def index():
     return render_template_string(HTML_TEMPLATE)
