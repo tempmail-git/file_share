@@ -738,7 +738,7 @@ HTML_TEMPLATE = """
             <p>File Transfer | Secure peer-to-peer file sharing | Built with Python Flask</p>
             <p>Files are transferred directly between browsers - no server storage</p>
             <div class="contact-email">
-            Contact: <a href="mailto:mohammedsaifms2006@gmail.com">EMAIL</a><br>
+            Contact: <a href="mailto:mohammedsaifms2006@gmail.com">EMAIL</a><br><br>
                      <a href="https://t.me/Mdsaif_0007">TELEGRAM</a>
             </div>
         </footer>
