@@ -582,6 +582,47 @@ HTML_TEMPLATE = """
                 grid-template-columns: 1fr;
             }
         }
+
+                footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 30px;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            border-top: 1px solid var(--card-border);
+        }
+        
+        .contact-email {
+            margin-top: 15px;
+            font-size: 1rem;
+        }
+        
+        .contact-email a {
+            color: var(--primary-light);
+            text-decoration: none;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .contact-email a::after {
+            content: "";
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: var(--primary-light);
+            transition: width 0.3s;
+        }
+        
+        .contact-email a:hover {
+            color: white;
+        }
+        
+        .contact-email a:hover::after {
+            width: 100%;
+        }
+        
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
@@ -590,7 +631,7 @@ HTML_TEMPLATE = """
 <body>
     <div class="container">
         <header>
-            <div class="logo">NeoTransfer</div>
+            <div class="logo">File Transfer</div>
             <p class="tagline">Peer-to-peer file sharing with end-to-end encryption. No server storage, no waiting.</p>
         </header>
         
@@ -694,8 +735,11 @@ HTML_TEMPLATE = """
         </div>
         
         <footer>
-            <p>NeoTransfer | Secure peer-to-peer file sharing | Built with Python Flask</p>
+            <p>File Transfer | Secure peer-to-peer file sharing | Built with Python Flask</p>
             <p>Files are transferred directly between browsers - no server storage</p>
+            <div class="contact-email">
+            Contact: <a href="mailto:mohammedsaifms2006@gmail.com">MAIL</a>
+            </div>
         </footer>
     </div>
 
