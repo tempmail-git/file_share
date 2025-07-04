@@ -24,7 +24,7 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NeoTransfer | File Sharing</title>
+    <title> File Sharing </title>
     <style>
         :root {
             --primary: #6366f1;
@@ -739,6 +739,7 @@ HTML_TEMPLATE = """
             <p>Files are transferred directly between browsers - no server storage</p>
             <div class="contact-email">
             Contact: <a href="mailto:mohammedsaifms2006@gmail.com">MAIL</a>
+                     <a href="https://t.me/Mdsaif_0007">TELEGRAM</a>
             </div>
         </footer>
     </div>
