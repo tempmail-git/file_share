@@ -24,7 +24,7 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FilePizza | Modern File Sharing</title>
+    <title>File Sharing</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto+Mono:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -638,7 +638,7 @@ HTML_TEMPLATE = """
 <body>
     <div class="container">
         <header>
-            <div class="logo">FilePizza</div>
+            <div class="logo">File Sharing</div>
             <p class="tagline">Fast, secure file sharing with end-to-end encryption. No server storage, no limits.</p>
         </header>
         
@@ -763,10 +763,10 @@ HTML_TEMPLATE = """
         </div>
         
         <footer>
-            <div class="footer-logo">FilePizza</div>
+            <div class="footer-logo">File Sharing</div>
             <p>Modern File Sharing Platform | Built with Python Flask</p>
             <p>Files are transferred securely with end-to-end encryption</p>
-            <p style="margin-top: 15px; font-size: 0.9rem;">&copy; 2023 FilePizza. All rights reserved.</p>
+            <p style="margin-top: 15px; font-size: 0.9rem;">&copy; 2023 . All rights reserved.</p>
         </footer>
     </div>
 
