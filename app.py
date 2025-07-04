@@ -24,53 +24,85 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FilePizza Clone</title>
+    <title>NeoTransfer | File Sharing</title>
     <style>
         :root {
-            --primary: #ff6b6b;
-            --secondary: #4ecdc4;
-            --dark: #292f36;
-            --light: #f7f9f9;
-            --gray: #e0e0e0;
-            --success: #4caf50;
-            --accent: #ff9e44;
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --secondary: #0ea5e9;
+            --accent: #8b5cf6;
+            --success: #10b981;
+            --error: #ef4444;
+            --dark: #1e293b;
+            --darker: #0f172a;
+            --light: #f1f5f9;
+            --card-bg: rgba(255, 255, 255, 0.08);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
         }
         
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
         }
         
         body {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: linear-gradient(135deg, var(--darker) 0%, var(--dark) 100%);
             min-height: 100vh;
             padding: 20px;
-            color: var(--dark);
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+        
+        body::before {
+            content: "";
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            right: -50%;
+            bottom: -50%;
+            background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.1) 0%, transparent 60%);
+            z-index: -1;
+            animation: rotate 20s linear infinite;
+        }
+        
+        @keyframes rotate {
+            100% {
+                transform: rotate(360deg);
+            }
         }
         
         .container {
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 0 auto;
         }
         
         header {
             text-align: center;
-            padding: 30px 0;
+            padding: 30px 0 20px;
+            position: relative;
         }
         
         .logo {
             font-size: 3.5rem;
-            margin-bottom: 10px;
-            color: var(--primary);
+            margin-bottom: 15px;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 15px rgba(99, 102, 241, 0.3));
         }
         
         .tagline {
             font-size: 1.2rem;
-            color: #555;
             max-width: 600px;
-            margin: 0 auto 30px;
+            margin: 0 auto 40px;
+            color: var(--text-secondary);
+            font-weight: 300;
+            line-height: 1.6;
         }
         
         .card-container {
@@ -81,58 +113,114 @@ HTML_TEMPLATE = """
         }
         
         .card {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 16px;
+            border: 1px solid var(--card-border);
             padding: 30px;
             width: 100%;
-            max-width: 450px;
-            transition: transform 0.3s ease;
+            max-width: 500px;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            opacity: 0.8;
         }
         
         .card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-8px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
         }
         
         .card-header {
             display: flex;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             padding-bottom: 15px;
-            border-bottom: 1px solid var(--gray);
+            border-bottom: 1px solid var(--card-border);
         }
         
         .card-icon {
-            font-size: 2rem;
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             margin-right: 15px;
-            color: var(--primary);
+            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+        }
+        
+        .card-icon i {
+            font-size: 24px;
+            color: white;
         }
         
         .card-title {
-            font-size: 1.5rem;
-            font-weight: 600;
+            font-size: 1.6rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, var(--text-primary), var(--text-secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
         
         .drop-area {
-            border: 2px dashed var(--gray);
-            border-radius: 8px;
+            border: 2px dashed var(--card-border);
+            border-radius: 12px;
             padding: 40px 20px;
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             transition: all 0.3s;
             cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .drop-area::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(99, 102, 241, 0.05);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .drop-area:hover::before {
+            opacity: 1;
         }
         
         .drop-area.active {
             border-color: var(--primary);
-            background-color: rgba(255, 107, 107, 0.05);
+            background-color: rgba(99, 102, 241, 0.08);
         }
         
         .drop-area i {
-            font-size: 3rem;
-            color: var(--secondary);
+            font-size: 3.5rem;
             margin-bottom: 15px;
             display: block;
+            color: var(--primary-light);
+            opacity: 0.8;
+        }
+        
+        .drop-area p {
+            margin: 5px 0;
+            color: var(--text-secondary);
         }
         
         .file-input {
@@ -140,11 +228,11 @@ HTML_TEMPLATE = """
         }
         
         .btn {
-            background: var(--primary);
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
             color: white;
             border: none;
-            padding: 12px 25px;
-            border-radius: 50px;
+            padding: 14px 30px;
+            border-radius: 12px;
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
@@ -152,68 +240,107 @@ HTML_TEMPLATE = """
             display: inline-block;
             text-align: center;
             width: 100%;
-            max-width: 200px;
+            max-width: 240px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .btn::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.5s;
+        }
+        
+        .btn:hover::before {
+            left: 100%;
         }
         
         .btn:hover {
-            background: #ff5252;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
-        }
-        
-        .btn-secondary {
-            background: var(--secondary);
-        }
-        
-        .btn-secondary:hover {
-            background: #3bb5ae;
-            box-shadow: 0 5px 15px rgba(78, 205, 196, 0.4);
-        }
-        
-        .btn-accent {
-            background: var(--accent);
-        }
-        
-        .btn-accent:hover {
-            background: #ff8c2b;
-            box-shadow: 0 5px 15px rgba(255, 158, 68, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
         }
         
         .btn:disabled {
-            background: var(--gray);
+            background: var(--card-border);
             cursor: not-allowed;
             transform: none;
             box-shadow: none;
         }
         
+        .btn:disabled:hover::before {
+            left: -100%;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--accent), #a78bfa);
+        }
+        
+        .btn-secondary:hover {
+            box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
+        }
+        
+        .btn-accent {
+            background: linear-gradient(135deg, var(--success), #34d399);
+        }
+        
+        .btn-accent:hover {
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+        }
+        
         .progress-container {
-            margin: 20px 0;
+            margin: 25px 0;
         }
         
         .progress-bar {
-            height: 8px;
-            background: var(--gray);
-            border-radius: 4px;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
             overflow: hidden;
+            position: relative;
         }
         
         .progress {
             height: 100%;
-            background: var(--secondary);
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
             width: 0%;
-            transition: width 0.3s;
+            transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+        }
+        
+        .progress::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
         }
         
         .file-info {
             display: flex;
             justify-content: space-between;
-            margin-top: 10px;
+            margin-top: 12px;
             font-size: 0.9rem;
-            color: #666;
+            color: var(--text-secondary);
         }
         
         .id-container {
-            margin: 20px 0;
+            margin: 25px 0;
             display: none;
             text-align: center;
         }
@@ -221,34 +348,41 @@ HTML_TEMPLATE = """
         .transfer-id {
             font-size: 1.5rem;
             font-weight: bold;
-            padding: 15px 25px;
-            background: rgba(78, 205, 196, 0.1);
-            border-radius: 8px;
+            padding: 16px 30px;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 12px;
             display: inline-block;
-            margin: 15px 0;
-            color: var(--dark);
-            border: 1px dashed var(--secondary);
+            margin: 20px 0;
+            color: var(--text-primary);
+            border: 1px dashed var(--primary-light);
             cursor: pointer;
             position: relative;
+            transition: all 0.3s;
+            font-family: 'Fira Code', monospace;
+            letter-spacing: 1px;
+            backdrop-filter: blur(5px);
         }
         
         .transfer-id:hover {
-            background: rgba(78, 205, 196, 0.2);
+            background: rgba(99, 102, 241, 0.2);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.2);
         }
         
         .id-tooltip {
             position: absolute;
-            top: -30px;
+            top: -35px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0,0,0,0.7);
+            background: rgba(0,0,0,0.8);
             color: white;
-            padding: 5px 10px;
-            border-radius: 4px;
+            padding: 6px 12px;
+            border-radius: 6px;
             font-size: 0.8rem;
             opacity: 0;
             transition: opacity 0.3s;
             pointer-events: none;
+            backdrop-filter: blur(5px);
         }
         
         .transfer-id:hover .id-tooltip {
@@ -256,17 +390,40 @@ HTML_TEMPLATE = """
         }
         
         .file-list {
-            margin-top: 15px;
-            max-height: 200px;
+            margin-top: 20px;
+            max-height: 240px;
             overflow-y: auto;
             display: none;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.1);
+            padding: 15px;
+        }
+        
+        /* Scrollbar styling */
+        .file-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .file-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+        
+        .file-list::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 4px;
         }
         
         .file-item {
             display: flex;
             justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #eee;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--card-border);
+            align-items: center;
+        }
+        
+        .file-item:last-child {
+            border-bottom: none;
         }
         
         .file-name {
@@ -274,69 +431,141 @@ HTML_TEMPLATE = """
             text-overflow: ellipsis;
             white-space: nowrap;
             flex: 1;
+            font-size: 0.95rem;
         }
         
         .file-size {
-            margin-left: 10px;
-            color: #666;
+            margin-left: 15px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            min-width: 70px;
+            text-align: right;
         }
         
         .file-progress {
             width: 100%;
-            margin-top: 5px;
+            margin-top: 8px;
         }
         
         .status {
-            padding: 15px;
-            border-radius: 8px;
-            margin: 20px 0;
+            padding: 16px;
+            border-radius: 12px;
+            margin: 25px 0;
             text-align: center;
             display: none;
+            backdrop-filter: blur(5px);
         }
         
         .status.success {
-            background: rgba(76, 175, 80, 0.1);
+            background: rgba(16, 185, 129, 0.1);
             color: var(--success);
-            border: 1px solid var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
         }
         
         .status.error {
-            background: rgba(255, 107, 107, 0.1);
-            color: var(--primary);
-            border: 1px solid var(--primary);
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+            border: 1px solid rgba(239, 68, 68, 0.3);
         }
         
         .instructions {
-            margin-top: 30px;
+            margin-top: 40px;
             text-align: center;
-            color: #666;
-            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-size: 1rem;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
         }
         
-        .instructions ol {
-            text-align: left;
-            max-width: 600px;
-            margin: 15px auto;
-            padding-left: 20px;
+        .instructions h3 {
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+            font-weight: 600;
         }
         
-        .instructions li {
-            margin-bottom: 10px;
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
+        
+        .step-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            border: 1px solid var(--card-border);
+            transition: transform 0.3s;
+        }
+        
+        .step-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .step-number {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        .step-card h4 {
+            margin-bottom: 12px;
+            font-size: 1.1rem;
+            color: var(--text-primary);
+        }
+        
+        .step-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.5;
         }
         
         .file-limit {
             text-align: center;
-            margin-top: 10px;
-            color: #666;
-            font-size: 0.9rem;
+            margin-top: 15px;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
         }
         
         footer {
             text-align: center;
-            margin-top: 50px;
-            padding: 20px;
-            color: #666;
-            font-size: 0.9rem;
+            margin-top: 60px;
+            padding: 30px;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            border-top: 1px solid var(--card-border);
+        }
+        
+        .link-input {
+            width: 100%;
+            padding: 14px 20px;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.3s;
+            outline: none;
+        }
+        
+        .link-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+        }
+        
+        .link-input::placeholder {
+            color: var(--text-secondary);
         }
         
         @media (max-width: 768px) {
@@ -348,26 +577,35 @@ HTML_TEMPLATE = """
             .card {
                 max-width: 100%;
             }
+            
+            .steps {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <div class="logo">🍕 FilePizza</div>
-            <p class="tagline">Peer-to-peer file sharing in your browser. No server storage, no waiting.</p>
+            <div class="logo">NeoTransfer</div>
+            <p class="tagline">Peer-to-peer file sharing with end-to-end encryption. No server storage, no waiting.</p>
         </header>
         
         <div class="card-container">
             <!-- Sender Card -->
             <div class="card">
                 <div class="card-header">
-                    <div class="card-icon">📤</div>
+                    <div class="card-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
                     <h2 class="card-title">Send Files</h2>
                 </div>
                 
                 <div class="drop-area" id="dropArea">
-                    <i>📁</i>
+                    <i class="fas fa-cloud-upload-alt"></i>
                     <p>Drag & drop your files here</p>
                     <p>or</p>
                     <button class="btn" id="browseBtn">Browse Files</button>
@@ -403,7 +641,9 @@ HTML_TEMPLATE = """
             <!-- Receiver Card -->
             <div class="card">
                 <div class="card-header">
-                    <div class="card-icon">📥</div>
+                    <div class="card-icon">
+                        <i class="fas fa-cloud-download-alt"></i>
+                    </div>
                     <h2 class="card-title">Receive Files</h2>
                 </div>
                 
@@ -428,19 +668,33 @@ HTML_TEMPLATE = """
         </div>
         
         <div class="instructions">
-            <h3>How it works:</h3>
-            <ol>
-                <li><strong>Sender</strong> selects files and generates a transfer ID</li>
-                <li><strong>Recipient</strong> enters the transfer ID to connect</li>
-                <li>Files are transferred <strong>directly</strong> between browsers</li>
-                <li>Files are <strong>never stored</strong> on any server - completely private</li>
-                <li>Transfer works as long as both browsers are connected</li>
-                <li>Supports multiple files and large transfers up to 100GB</li>
-            </ol>
+            <h3>How It Works</h3>
+            <div class="steps">
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <h4>Select Files</h4>
+                    <p>Choose files you want to send by dragging or browsing</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <h4>Generate ID</h4>
+                    <p>Create a unique transfer ID to share with the recipient</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <h4>Share ID</h4>
+                    <p>Send the transfer ID to your recipient through any channel</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">4</div>
+                    <h4>Receive Files</h4>
+                    <p>Recipient enters the ID to download files directly</p>
+                </div>
+            </div>
         </div>
         
         <footer>
-            <p>FilePizza Clone | Peer-to-peer file sharing | Built with Python Flask</p>
+            <p>NeoTransfer | Secure peer-to-peer file sharing | Built with Python Flask</p>
             <p>Files are transferred directly between browsers - no server storage</p>
         </footer>
     </div>
@@ -602,6 +856,15 @@ HTML_TEMPLATE = """
                             idText.textContent = transferId;
                             sendBtn.disabled = true;
                             showStatus('All files uploaded! Share the transfer ID.', 'success');
+                            
+                            // Animate ID container
+                            idContainer.style.opacity = '0';
+                            idContainer.style.transform = 'translateY(20px)';
+                            setTimeout(() => {
+                                idContainer.style.transition = 'all 0.5s ease';
+                                idContainer.style.opacity = '1';
+                                idContainer.style.transform = 'translateY(0)';
+                            }, 100);
                         }
                         return;
                     }
@@ -673,9 +936,12 @@ HTML_TEMPLATE = """
             
             // Show visual feedback
             const originalText = idText.textContent;
-            idText.textContent = 'Copied!';
+            idText.textContent = 'Copied to clipboard!';
+            idText.style.color = '#10b981';
+            
             setTimeout(() => {
                 idText.textContent = originalText;
+                idText.style.color = '';
             }, 2000);
         }
         
@@ -688,6 +954,15 @@ HTML_TEMPLATE = """
             receiveStatus.textContent = 'Connecting to peer...';
             receiveStatus.className = 'status';
             receiveStatus.style.display = 'block';
+            
+            // Animate status appearance
+            receiveStatus.style.opacity = '0';
+            receiveStatus.style.transform = 'translateY(10px)';
+            setTimeout(() => {
+                receiveStatus.style.transition = 'all 0.3s ease';
+                receiveStatus.style.opacity = '1';
+                receiveStatus.style.transform = 'translateY(0)';
+            }, 100);
             
             // Check if transfer exists
             fetch(`/transfer/${transferId}`)
@@ -709,6 +984,15 @@ HTML_TEMPLATE = """
                             downloadBtn.href = `/download_all/${transferId}`;
                             downloadBtn.textContent = `Download All Files (${formatFileSize(fileData.total_size)})`;
                             downloadBtn.style.display = 'inline-block';
+                            
+                            // Animate download button appearance
+                            downloadBtn.style.opacity = '0';
+                            downloadBtn.style.transform = 'translateY(10px)';
+                            setTimeout(() => {
+                                downloadBtn.style.transition = 'all 0.4s ease';
+                                downloadBtn.style.opacity = '1';
+                                downloadBtn.style.transform = 'translateY(0)';
+                            }, 100);
                         } else {
                             receiveStatus.textContent = 'Error: ' + fileData.error;
                             receiveStatus.className = 'status error';
@@ -732,6 +1016,15 @@ HTML_TEMPLATE = """
         function displayReceiveFiles(files) {
             receiveFileList.innerHTML = '';
             receiveFileList.style.display = 'block';
+            
+            // Animate file list appearance
+            receiveFileList.style.opacity = '0';
+            receiveFileList.style.transform = 'translateY(10px)';
+            setTimeout(() => {
+                receiveFileList.style.transition = 'all 0.4s ease';
+                receiveFileList.style.opacity = '1';
+                receiveFileList.style.transform = 'translateY(0)';
+            }, 100);
             
             files.forEach(file => {
                 const fileItem = document.createElement('div');
@@ -763,8 +1056,7 @@ HTML_TEMPLATE = """
         init();
     </script>
 </body>
-</html>
-"""
+</html>   """
 
 # Flask Routes
 @app.route('/')
