@@ -631,7 +631,7 @@ HTML_TEMPLATE = """
 <body>
     <div class="container">
         <header>
-            <div class="logo">File Transfer</div>
+            <div class="logo">File Sharing</div>
             <p class="tagline">Peer-to-peer file sharing with end-to-end encryption. No server storage, no waiting.</p>
         </header>
         
@@ -731,6 +731,7 @@ HTML_TEMPLATE = """
                     <h4>Receive Files</h4>
                     <p>Recipient enters the ID to download files directly</p>
                 </div>
+                <h3>NOTE:It's better to share one file at once while you are sharing a large file .</h3>
             </div>
         </div>
         
