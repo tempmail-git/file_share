@@ -732,7 +732,8 @@ HTML_TEMPLATE = """
                     <p>Recipient enters the ID to download files directly</p>
                 </div>
                 <div class="step-card">
-                    <h4> NOTE: </h4>
+                    <div class="step-number">NOTE:</div>
+                    <h4>FAST SHARING</h4>
                     <p>It's better to share one file at once while you are sharing a large file .</p>
                 </div>
             </div>
