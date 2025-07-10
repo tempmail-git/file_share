@@ -24,7 +24,7 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> File Sharing </title>
+    <title> DirectDrop </title>
     <style>
         :root {
             --primary: #6366f1;
@@ -631,7 +631,7 @@ HTML_TEMPLATE = """
 <body>
     <div class="container">
         <header>
-            <div class="logo">File Sharing</div>
+            <div class="logo">Direct Drop</div>
             <p class="tagline">Peer-to-peer file sharing with end-to-end encryption. No server storage, no waiting.</p>
         </header>
         
@@ -740,7 +740,7 @@ HTML_TEMPLATE = """
         </div>
         
         <footer>
-            <p>File Transfer | Secure peer-to-peer file sharing | Built with Python Flask</p>
+            <p>DirectDrop | Secure peer-to-peer file sharing | Built with Python Flask</p>
             <p>Files are transferred directly between browsers - no server storage</p>
             <div class="contact-email">
             Contact: <a href="mailto:mohammedsaifms2006@gmail.com">EMAIL</a> &nbsp;&nbsp; <a href="https://t.me/Mdsaif_0007">TELEGRAM</a>
